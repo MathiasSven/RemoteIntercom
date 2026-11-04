@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Remote Intercom admin</title>
+    <style>
+      html { height: 100%; }
+      body { box-sizing: border-box; min-height: 100%; font: 16px sans-serif; max-width: 32rem; margin: 0 auto; padding: 1rem; }
+      h1 { margin: .5rem 0 1rem; }
+      .message { display: none; }
+      .message:target { display: block; }
+      .error { color: #a00; }
+      input { box-sizing: border-box; width: 100%; padding: .6rem; margin: .25rem 0 1rem; font: inherit; }
+      button { padding: .65rem 1rem; font: 600 18px sans-serif; }
+    </style>
+  </head>
+  <body>
+    <h1>Remote Intercom admin</h1>
+    <p id="connection-failed" class="message error" role="alert">Could not connect to home Wi-Fi. Check the settings and try again.</p>
+    <p id="connection-lost" class="message error" role="alert">Home Wi-Fi is unavailable. Check the settings and try again.</p>
+    <p id="invalid-settings" class="message error" role="alert">Check the Wi-Fi name and password. A new admin password needs at least 8 characters.</p>
+    <p id="settings-saved" class="message" role="status">Settings saved.</p>
+    <form method="post" action="/admin">
+      <label>New admin password (optional)<input name="admin_password" type="password" minlength="8" maxlength="128" placeholder="Leave blank to keep current"></label>
+      <label>Home Wi-Fi name (SSID)<input name="ssid" value="{{ssid}}" maxlength="32" required></label>
+      <label>Home Wi-Fi password<input name="wifi_password" type="password" maxlength="63" placeholder="Leave blank to keep saved password"></label>
+      <p>For a new Wi-Fi name, a blank password means an open network.</p>
+      <button type="submit">Save and connect</button>
+    </form>
+  </body>
+</html>

@@ -16,9 +16,26 @@
         "type": "github"
       }
     },
+    "nixpkgs-micropython": {
+      "locked": {
+        "lastModified": 1782414098,
+        "narHash": "sha256-f8PjC53KmgzdmKB85tqV629kr5o+wu/CST59Haj5fb4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "58528b66f0a6d8776c77167abafbccd6d0fa147c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "58528b66f0a6d8776c77167abafbccd6d0fa147c",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "nixpkgs-micropython": "nixpkgs-micropython"
       }
     }
   },

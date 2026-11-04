@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Initial setup</title>
+    <style>
+      html { height: 100%; }
+      body { box-sizing: border-box; min-height: 100%; font: 16px sans-serif; max-width: 32rem; margin: 0 auto; padding: 1rem; }
+      h1 { margin: .5rem 0 1rem; }
+      #invalid-setup { display: none; color: #a00; }
+      #invalid-setup:target { display: block; }
+      input { box-sizing: border-box; width: 100%; padding: .6rem; margin: .25rem 0 1rem; font: inherit; }
+      button { padding: .65rem 1rem; font: 600 18px sans-serif; }
+    </style>
+  </head>
+  <body>
+    <h1>Initial setup</h1>
+    <p>Choose a new administrator password, then enter the home Wi-Fi network.</p>
+    <p id="invalid-setup" role="alert">Check the Wi-Fi name and password. The new admin password needs at least 8 characters.</p>
+    <form method="post" action="/setup">
+      <label>New administrator password<input name="admin_password" type="password" minlength="8" maxlength="128" required></label>
+      <label>Home Wi-Fi name (SSID)<input name="ssid" maxlength="32" required></label>
+      <label>Home Wi-Fi password<input name="wifi_password" type="password" maxlength="63"></label>
+      <button type="submit">Save and connect</button>
+    </form>
+  </body>
+</html>

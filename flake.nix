@@ -3,26 +3,29 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { nixpkgs, ... }:
-    let
-      systems = [
-        "x86_64-linux"
-      ];
+  # Last hydra build before `micropython` package broke. Stuck at 1.27.0
+  inputs.nixpkgs-micropython.url = "github:NixOS/nixpkgs/58528b66f0a6d8776c77167abafbccd6d0fa147c";
 
-      forAllSystems = f:
-        nixpkgs.lib.genAttrs systems
-          (system: f nixpkgs.legacyPackages.${system});
+  outputs =
+    { nixpkgs, nixpkgs-micropython, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+
+      micropython = nixpkgs-micropython.legacyPackages.${system}.micropython;
     in
     {
-      devShells = forAllSystems (pkgs: {
+      devShells.${system} = {
         default = pkgs.mkShell {
           packages = with pkgs; [
             python3
             esptool
             mpremote
             picocom
+            micropython
             (pkgs.callPackage ./nix/packages/mpy-cross { })
 
+            mypy
             ruff
             uv
 
@@ -35,6 +38,8 @@
             echo "ESP8266 MicroPython development"
           '';
         };
-      });
+      };
+
+      formatter.${system} = pkgs.nixfmt-tree;
     };
 }

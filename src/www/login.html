@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Remote Intercom login</title>
+    <style>
+      html { height: 100%; overflow: hidden; }
+      body { box-sizing: border-box; height: 100%; overflow: hidden; font: 16px sans-serif; max-width: 32rem; margin: 0 auto; padding: 1rem; }
+      h1 { margin: .5rem 0 1.5rem; }
+      #incorrect-password { display: none; color: #a00; }
+      #incorrect-password:target { display: block; }
+      input { box-sizing: border-box; width: 100%; padding: .6rem; margin: .25rem 0 1rem; font: inherit; }
+      button { padding: .65rem 1rem; font: 600 18px sans-serif; }
+    </style>
+  </head>
+  <body>
+    <h1>Remote Intercom login</h1>
+    <p id="incorrect-password" role="alert">Incorrect password. Please try again.</p>
+    <form method="post" action="/login">
+      <label>Password<input name="password" type="password" required></label>
+      <button type="submit">Log in</button>
+    </form>
+  </body>
+</html>
