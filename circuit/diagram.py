@@ -28,7 +28,7 @@ with schemdraw.Drawing(canvas="svg", file="diagram.svg") as d:
     elm.Dot()
     with d.hold():
         elm.Line().right()
-        doorbell_input = elm.Dot(open=True).label("GPIO14 / High")
+        doorbell_input = elm.Dot(open=True).label("GPIO5 / High")
     elm.Resistor().toy(diode.start).label("$10 k\\Omega$\n0.25 W")
     elm.Dot(open=True).label("3.3 V")
 
@@ -65,7 +65,7 @@ with schemdraw.Drawing(canvas="svg", file="diagram.svg") as d:
 
     elm.Wire("|-").at(comp["DC-"]).to(gnd.start)
     elm.Wire("-|").at(comp["IN"]).to((doorbell_input.start.x, doorbell_input.start.y - 1))
-    relay_port = elm.Dot(open=True).label("GPIO10 / High")
+    relay_port = elm.Dot(open=True).label("GPIO4 / High")
 
     elm.Line().at(comp["DC+"]).right().length(2)
     elm.Line().toy(gnd.start)

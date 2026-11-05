@@ -2,7 +2,7 @@
 
 pressed = False
 doorbell_pressed = False
-doorbell_pin = 14
+doorbell_pin = 5
 
 
 class Pin:

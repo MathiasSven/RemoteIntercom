@@ -53,30 +53,28 @@ off until the next attempt.
 ## Intercom interface
 
 The `DOOR_RELAY_PIN` and `DOORBELL_PIN` constants near the top of
-`src/lib/server.py` select the pins; their defaults are GPIO10 and GPIO14.
+`src/lib/server.py` select the pins; their defaults are GPIO4 and GPIO5.
 Change these constants before building and deploying if the wiring differs.
 
-GPIO10 is an active-low relay output, initialized high. After setup, send
-`POST /open` to pulse GPIO10 low for one second; no login is required. The
+GPIO4 is an active-low relay output, initialized high. After setup, send
+`POST /open` to pulse GPIO4 low for one second; no login is required. The
 response is `204 No Content` when accepted,
 `429 Too Many Requests` during the five-second cooldown measured from the
 accepted request, or `403 Forbidden` if setup is incomplete. Other methods on
 `/open` return `405 Method Not Allowed`. Anyone able to reach the device can
 open the door.
 
-GPIO14 is an input with its internal pull-up enabled. Connect the doorbell
-contact between GPIO14 and ground. A low level stable for 50 ms triggers three
+GPIO5 is an input with its internal pull-up enabled. Connect the doorbell
+contact between GPIO5 and ground. A low level stable for 50 ms triggers three
 UDP broadcasts containing the bytes `doorbell` to `255.255.255.255:31941`,
 200 ms apart. A held contact triggers once; release and press it again for
 another notification. UDP delivery is not guaranteed, and listeners need to
 be on a network that receives the device's broadcasts.
 
-GPIO10 is connected to flash on many ESP8266 modules and may not be available
-for a relay. Check the specific module's wiring before connecting it. The
-application initializes GPIO10 high, but cannot control its state before the
+The application initializes GPIO4 high, but cannot control its state before the
 application starts or during reset. The relay circuit must keep the relay off
-throughout power-up and reset, including any flash activity on GPIO10; verify
-this on the actual hardware before connecting the door. Relay and button timing
+throughout power-up and reset; verify this on the actual hardware before
+connecting the door. Relay and button timing
 depend on the device's cooperative event loop and can be delayed by synchronous
 flash or Wi-Fi operations.
 
@@ -107,7 +105,7 @@ and the station connection state. Each successful UDP send logs `Doorbell UDP
 sent`; `Doorbell broadcast error` reports the failed socket operation and error.
 A successful send
 means the local network stack accepted the packet, not that a listener received
-it. If GPIO14 stays low from startup, release it and press again to trigger a
+it. If GPIO5 stays low from startup, release it and press again to trigger a
 new event.
 `Wi-Fi retry start` and `Wi-Fi retry end` bracket a home-network connection
 attempt. The server keeps accepting requests during this interval, though
