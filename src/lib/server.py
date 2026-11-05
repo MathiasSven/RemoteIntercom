@@ -80,7 +80,10 @@ class IntercomServer:
         self.doorbell_raw = self.doorbell.value()
         self.doorbell_stable = self.doorbell_raw
         print(
-            "Intercom relay GPIO", DOOR_RELAY_PIN, "HIGH; doorbell GPIO", DOORBELL_PIN,
+            "Intercom relay GPIO",
+            DOOR_RELAY_PIN,
+            "HIGH; doorbell GPIO",
+            DOORBELL_PIN,
             self.doorbell_raw,
         )
         self.doorbell_changed = time.ticks_ms()
