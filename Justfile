@@ -35,6 +35,7 @@ format:
 
 check:
     mypy
+    (cd ./circuit; mypy .)
     ruff check
 
 sim-test heap="64K":

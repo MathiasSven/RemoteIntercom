@@ -13,12 +13,25 @@
       pkgs = nixpkgs.legacyPackages.${system};
 
       micropython = nixpkgs-micropython.legacyPackages.${system}.micropython;
+
+      python = (pkgs.python3.override {
+        packageOverrides = import ./nix/python-overrides.nix;
+      }).withPackages (p: with p; [
+        matplotlib
+        numpy
+        pandas
+        pandas-stubs
+        scipy
+        scipy-stubs
+
+        schemdraw
+      ]);
     in
     {
       devShells.${system} = {
         default = pkgs.mkShell {
           packages = with pkgs; [
-            python3
+            python
             esptool
             mpremote
             picocom
