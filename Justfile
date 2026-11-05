@@ -10,6 +10,9 @@ copy: build
     mpremote cp -r dist/lib :
     mpremote cp -r dist/www :
 
+repl:
+    mpremote repl
+
 [arg("clear-cred", long="clear-cred", short="c", value="true")]
 reset clear-cred="false":
     {{ if clear-cred == "true" { "mpremote rm intercom-config.json" } else { ":" } }}
@@ -34,8 +37,8 @@ check:
     mypy
     ruff check
 
-sim-test heap="52K":
+sim-test heap="64K":
     python tests/simulate.py test --heap {{ heap }}
 
-sim heap="52K":
+sim heap="64K":
     python tests/simulate.py serve --heap {{ heap }}

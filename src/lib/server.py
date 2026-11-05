@@ -2,6 +2,7 @@
 
 import gc
 import os
+import socket
 import sys
 import time
 from typing import TYPE_CHECKING
@@ -44,6 +45,15 @@ SSID_PLACEHOLDER = b"{{ssid}}"
 # flashing mode instead of starting MicroPython.
 ADMIN_RESET_PIN = 0
 ADMIN_RESET_HOLD_MS = 5 * 1000
+DOOR_RELAY_PIN = 10
+DOORBELL_PIN = 14
+RELAY_PULSE_MS = 1000
+DOOR_COOLDOWN_MS = 5000
+DOORBELL_DEBOUNCE_MS = 50
+DOORBELL_BROADCAST_INTERVAL_MS = 200
+DOORBELL_BROADCAST_COUNT = 3
+DOORBELL_PORT = 31941
+DOORBELL_ADDRESS = "255.255.255.255"
 
 
 def ap_name(ap: network.WLAN) -> str:
@@ -63,6 +73,19 @@ def restore_admin_password(cfg: "config.Config") -> None:
 
 class IntercomServer:
     def __init__(self) -> None:
+        self.door_relay = machine.Pin(DOOR_RELAY_PIN, machine.Pin.OUT, value=1)
+        self.doorbell = machine.Pin(DOORBELL_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+        self.relay_deadline: _TicksMs | None = None
+        self.door_cooldown: _TicksMs | None = None
+        self.doorbell_raw = self.doorbell.value()
+        self.doorbell_stable = self.doorbell_raw
+        print(
+            "Intercom relay GPIO", DOOR_RELAY_PIN, "HIGH; doorbell GPIO", DOORBELL_PIN,
+            self.doorbell_raw,
+        )
+        self.doorbell_changed = time.ticks_ms()
+        self.broadcast_remaining = 0
+        self.broadcast_deadline: _TicksMs | None = None
         self.config: config.Config = config.load_config()
         self.ap = network.WLAN(network.AP_IF)
         self.sta = network.WLAN(network.STA_IF)
@@ -370,7 +393,23 @@ class IntercomServer:
         )
 
         logged_in = self.authenticated({"cookie": cookie})
-        if method == b"POST" and path == b"/login":
+        if path == b"/open":
+            if method != b"POST":
+                await send(client, "405 Method Not Allowed", "", "Allow:POST\r\n")
+            elif self.config["must_change_password"]:
+                await send(client, "403 Forbidden", "")
+            else:
+                now = time.ticks_ms()
+                if self.door_cooldown is not None and not utils.ticks_expired(
+                    now, self.door_cooldown
+                ):
+                    await send(client, "429 Too Many Requests", "")
+                else:
+                    self.door_relay.value(0)
+                    self.relay_deadline = time.ticks_add(now, RELAY_PULSE_MS)
+                    self.door_cooldown = time.ticks_add(now, DOOR_COOLDOWN_MS)
+                    await send(client, "204 No Content", "")
+        elif method == b"POST" and path == b"/login":
             values = parse_form(body)
             if (
                 utils.password_digest(values.get("password", ""), self.config["password_salt"])
@@ -473,10 +512,61 @@ class IntercomServer:
         else:
             await send(client, "303 See Other", "", "Location:/admin\r\n")
 
+    def maintain_intercom(self, now: "_TicksMs") -> None:
+        if self.relay_deadline is not None and utils.ticks_expired(now, self.relay_deadline):
+            self.door_relay.value(1)
+            self.relay_deadline = None
+        if self.door_cooldown is not None and utils.ticks_expired(now, self.door_cooldown):
+            self.door_cooldown = None
+
+        level = self.doorbell.value()
+        if level != self.doorbell_raw:
+            self.doorbell_raw = level
+            self.doorbell_changed = now
+        elif (
+            level != self.doorbell_stable
+            and time.ticks_diff(now, self.doorbell_changed) >= DOORBELL_DEBOUNCE_MS
+        ):
+            self.doorbell_stable = level
+            print("Doorbell GPIO", DOORBELL_PIN, level, "STA connected", self.sta.isconnected())
+            if not level:
+                self.broadcast_remaining = DOORBELL_BROADCAST_COUNT
+                self.broadcast_deadline = now
+
+        if (
+            self.broadcast_remaining
+            and self.broadcast_deadline is not None
+            and utils.ticks_expired(now, self.broadcast_deadline)
+        ):
+            self.broadcast_remaining -= 1
+            self.broadcast_deadline = time.ticks_add(now, DOORBELL_BROADCAST_INTERVAL_MS)
+            sock = None
+            stage = "socket"
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                stage = "setsockopt"
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                stage = "address"
+                if sys.platform == "esp8266":
+                    # lwIP accepts numeric address tuples directly; resolving the
+                    # limited broadcast address may return a negative DNS error.
+                    address = (DOORBELL_ADDRESS, DOORBELL_PORT)
+                else:
+                    address = socket.getaddrinfo(DOORBELL_ADDRESS, DOORBELL_PORT)[0][-1]
+                stage = "sendto"
+                sent = sock.sendto(b"doorbell", address)
+                print("Doorbell UDP sent", sent, "bytes to", DOORBELL_ADDRESS, DOORBELL_PORT)
+            except (OSError, ValueError, AttributeError) as error:
+                print("Doorbell broadcast error", stage, error)
+            finally:
+                if sock is not None:
+                    sock.close()
+
     def service(self) -> None:
+        now = time.ticks_ms()
+        self.maintain_intercom(now)
         self.check_admin_reset_button()
         self.maintain_wifi()
-        now = time.ticks_ms()
         if utils.ticks_expired(now, self.next_heartbeat):
             self.next_heartbeat = time.ticks_add(now, HEARTBEAT_INTERVAL_MS)
             print(

@@ -20,6 +20,8 @@ import server
 
 server.HTTP_HOST = "127.0.0.1"
 server.HTTP_PORT = options["port"]
+server.DOORBELL_ADDRESS = "127.0.0.1"
+machine.doorbell_pin = server.DOORBELL_PIN
 if options["fast"]:
     # Only durations change. Tick arithmetic, networking and the scheduler are real.
     server.CONNECT_TIMEOUT_MS = 600
@@ -45,6 +47,7 @@ async def controls():
         if command["sequence"] != sequence:
             network.router.update(command.get("router", {}))
             machine.pressed = command.get("button", False)
+            machine.doorbell_pressed = command.get("doorbell", False)
             sequence = command["sequence"]
         minimum_free = min(minimum_free, gc.mem_free())
         gc.collect()
@@ -60,6 +63,7 @@ async def controls():
             "clients": app.active_clients,
             "must_change_password": app.config["must_change_password"],
             "reset_latched": app.reset_latched,
+            "relay": app.door_relay.value(),
             "free": gc.mem_free(),
             "startup_free": startup_free,
             "minimum_sampled_free": minimum_free,

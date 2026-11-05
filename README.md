@@ -50,6 +50,36 @@ shares one radio between AP and station, so a scan can still briefly interrupt
 the phone's connection. After a failed retry the station interface is switched
 off until the next attempt.
 
+## Intercom interface
+
+The `DOOR_RELAY_PIN` and `DOORBELL_PIN` constants near the top of
+`src/lib/server.py` select the pins; their defaults are GPIO10 and GPIO14.
+Change these constants before building and deploying if the wiring differs.
+
+GPIO10 is an active-low relay output, initialized high. After setup, send
+`POST /open` to pulse GPIO10 low for one second; no login is required. The
+response is `204 No Content` when accepted,
+`429 Too Many Requests` during the five-second cooldown measured from the
+accepted request, or `403 Forbidden` if setup is incomplete. Other methods on
+`/open` return `405 Method Not Allowed`. Anyone able to reach the device can
+open the door.
+
+GPIO14 is an input with its internal pull-up enabled. Connect the doorbell
+contact between GPIO14 and ground. A low level stable for 50 ms triggers three
+UDP broadcasts containing the bytes `doorbell` to `255.255.255.255:31941`,
+200 ms apart. A held contact triggers once; release and press it again for
+another notification. UDP delivery is not guaranteed, and listeners need to
+be on a network that receives the device's broadcasts.
+
+GPIO10 is connected to flash on many ESP8266 modules and may not be available
+for a relay. Check the specific module's wiring before connecting it. The
+application initializes GPIO10 high, but cannot control its state before the
+application starts or during reset. The relay circuit must keep the relay off
+throughout power-up and reset, including any flash activity on GPIO10; verify
+this on the actual hardware before connecting the door. Relay and button timing
+depend on the device's cooperative event loop and can be delayed by synchronous
+flash or Wi-Fi operations.
+
 ## Admin-password recovery
 
 The common ESP8266 development-board **FLASH** button is connected to GPIO0.
@@ -71,6 +101,14 @@ time spent reading headers and body; it never prints passwords or cookies.
 Logs are printed to serial only; the device keeps no log history or log file.
 
 An `Alive` line every 30 seconds confirms the main loop is still running.
+At startup, `Intercom relay GPIO` reports the selected pins, the initialized
+relay state and the initial doorbell level. A debounced transition logs `Doorbell GPIO`
+and the station connection state. Each successful UDP send logs `Doorbell UDP
+sent`; `Doorbell broadcast error` reports the failed socket operation and error.
+A successful send
+means the local network stack accepted the packet, not that a listener received
+it. If GPIO14 stays low from startup, release it and press again to trigger a
+new event.
 `Wi-Fi retry start` and `Wi-Fi retry end` bracket a home-network connection
 attempt. The server keeps accepting requests during this interval, though
 radio scanning can still delay them. `headers too large`,
@@ -115,8 +153,9 @@ router restoration, and a held FLASH button during a stalled request.
 
 The simulator runs the compiled application under the `micropython` executable
 in PATH, with a configurable GC heap. It uses real MicroPython asyncio, hashing,
-configuration files, templates and localhost TCP sockets. Only `network.WLAN`
-and the FLASH button (`machine.Pin`) are simulated. The HTTP listener is bound
+configuration files, templates and localhost TCP sockets. `network.WLAN` and
+GPIO pins (`machine.Pin`) are simulated. Doorbell datagrams use localhost, so
+the simulator does not verify broadcast delivery. The HTTP listener is bound
 to `127.0.0.1` on a dynamically selected port. Production still binds to
 `0.0.0.0:80`.
 
@@ -124,9 +163,9 @@ Prerequisites: `micropython`, `mpy-cross`, and host `python` in PATH (provided b
 the development shell). No third-party host Python packages are required.
 
 ```bash
-just sim-test          # attempts exact 38 KiB ESP8266 GC heap
-just sim-test 64K      # functional Unix-host run (larger heap)
-just sim 64K           # interactive browser session
+just sim-test          # functional Unix-host run at 64 KiB
+just sim-test 38K      # attempts exact 38 KiB ESP8266 GC heap
+just sim               # interactive browser session at 64 KiB
 ```
 
 Equivalent direct command: `python tests/simulate.py test --heap 64K --repeat 50`.

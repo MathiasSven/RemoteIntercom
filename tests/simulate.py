@@ -160,6 +160,9 @@ class Simulation:
 def check(heap, repeat):
     with Simulation(heap, router_ssid="SimNet-42") as sim:
         assert sim.wait(lambda s: s["ap"])["attempts"] == 0
+        assert sim.state()["relay"] == 1
+        assert sim.request("/open", {})[0] == 403
+        assert sim.request("/open")[0] == 405
         assert b"Remote Intercom login" in sim.request()[2]
         status, headers, _ = sim.request("/login", {"password": "wrong"})
         assert status == 303 and "Set-Cookie" not in headers
@@ -182,6 +185,36 @@ def check(heap, repeat):
         assert persisted["password_hash"] == expected
         # No success-page fetch: AP must shut down autonomously.
         sim.wait(lambda s: s["connected"] and not s["ap"])
+        started = time.monotonic()
+        assert sim.request("/open", {})[0] == 204
+        sim.wait(lambda s: s["relay"] == 0)
+        assert sim.request("/open", {})[0] == 429
+        sim.wait(lambda s: s["relay"] == 1, timeout=2)
+        assert time.monotonic() - started >= 0.9
+        assert sim.request("/open", {})[0] == 429
+        time.sleep(max(0, started + 5.1 - time.monotonic()))
+        assert sim.request("/open", {})[0] == 204
+        sim.wait(lambda s: s["relay"] == 1, timeout=2)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as listener:
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listener.bind(("", 31941))
+            listener.settimeout(2)
+            sim.control(doorbell=True)
+            for _ in range(3):
+                assert listener.recvfrom(100)[0] == b"doorbell"
+            listener.settimeout(0.5)
+            try:
+                listener.recvfrom(100)
+                raise AssertionError("held doorbell sent an extra packet")
+            except TimeoutError:
+                pass
+            sim.control(doorbell=False)
+            time.sleep(0.2)
+            sim.control(doorbell=True)
+            listener.settimeout(2)
+            for _ in range(3):
+                assert listener.recvfrom(100)[0] == b"doorbell"
+            sim.control(doorbell=False)
         cookie = sim.login("admin-secret")
         before = sim.wait(lambda s: s["clients"] == 0)["free"]
         for _ in range(repeat):
@@ -245,7 +278,7 @@ def check(heap, repeat):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("test", "serve"), nargs="?", default="test")
-    parser.add_argument("--heap", default="38K", help="MicroPython GC heap, e.g. 64K")
+    parser.add_argument("--heap", default="64K", help="MicroPython GC heap, e.g. 64K")
     parser.add_argument("--repeat", type=int, default=50)
     args = parser.parse_args()
     if args.mode == "test":
