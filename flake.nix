@@ -14,20 +14,26 @@
 
       micropython = nixpkgs-micropython.legacyPackages.${system}.micropython;
 
-      python = (pkgs.python3.override {
-        packageOverrides = import ./nix/python-overrides.nix;
-      }).withPackages (p: with p; [
-        matplotlib
-        numpy
-        pandas
-        pandas-stubs
-        scipy
-        scipy-stubs
+      python =
+        (pkgs.python3.override {
+          packageOverrides = import ./nix/python-overrides.nix;
+        }).withPackages
+          (
+            p: with p; [
+              matplotlib
+              numpy
+              pandas
+              pandas-stubs
+              scipy
+              scipy-stubs
 
-        schemdraw
-      ]);
+              schemdraw
+            ]
+          );
     in
     {
+      nixosModules.default = import ./client/linux/module.nix;
+
       devShells.${system} = {
         default = pkgs.mkShell {
           packages = with pkgs; [
@@ -41,6 +47,9 @@
             mypy
             ruff
             uv
+
+            # for ./client/linux
+            libnotify
 
             just
           ];

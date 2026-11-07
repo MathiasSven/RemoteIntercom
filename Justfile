@@ -36,6 +36,7 @@ format:
 check:
     mypy
     (cd ./circuit; mypy .)
+    (cd ./client/linux; mypy .)
     ruff check
 
 sim-test heap="64K":

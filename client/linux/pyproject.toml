@@ -1,0 +1,7 @@
+[project]
+name = "remoteintercom-notifications"
+version = "0.1.0"
+
+[tool.pyright]
+
+[tool.mypy]
