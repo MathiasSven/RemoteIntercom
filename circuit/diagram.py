@@ -11,7 +11,7 @@ with schemdraw.Drawing(canvas="svg", file="diagram.svg") as d:
     elm.Line().at(header.pin1).length(2)
     diode = elm.Diode().label("1N4148")
     elm.Resistor().down(2).label("$2.2 k\\Omega$\n0.5 W")
-    zener = elm.Zener().reverse().length(2).label("8.2 V\n0.5 W")
+    line = elm.Line().length(2)
 
     elm.Line().right(1.45)
     opto = elm.Optocoupler().label("PC817C")
@@ -24,7 +24,7 @@ with schemdraw.Drawing(canvas="svg", file="diagram.svg") as d:
     gnd = elm.Ground()
 
     elm.Line().right(1).at(opto.collector)
-    elm.Line().toy(zener.start)
+    elm.Line().toy(line.start)
     elm.Dot()
     with d.hold():
         elm.Line().right()
