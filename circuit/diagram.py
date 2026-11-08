@@ -68,5 +68,7 @@ with schemdraw.Drawing(canvas="svg", file="diagram.svg") as d:
     relay_port = elm.Dot(open=True).label("GPIO4 / High")
 
     elm.Line().at(comp["DC+"]).right().length(2)
+    elm.Resistor().up(2).label("$10 \\Omega$\n0.25 W", loc="B")
+    elm.Resistor().up(1).label("$10 \\Omega$\n0.25 W", loc="B")
     elm.Line().toy(gnd.start)
     elm.Dot(open=True).label("5 V")
