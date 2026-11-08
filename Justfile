@@ -28,6 +28,7 @@ compile file:
 clean:
     rm -rf ./dist
 
+alias fmt := format
 format:
     just --format
     nix fmt
