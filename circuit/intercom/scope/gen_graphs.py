@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Produce annotated oscilloscope plots for SPLG recordings 1–4 and 6.
+"""Produce annotated oscilloscope plots for SPLG recordings 1–4, 6, 8 and 9.
 
 Dependencies: numpy, pandas, matplotlib, scipy
 Usage: python gen_graphs.py  (run in the directory containing the CSV files)
@@ -211,16 +211,44 @@ def splg0006_plot(rec: Recording) -> None:
     plt.close(fig)
 
 
+def detection_plot(rec: Recording, stem: str, title: str, start: float, stop: float) -> None:
+    fig, axes = plt.subplots(2, 1, figsize=(13, 7))
+    axes[0].plot(rec.time, rec.voltage, color="#6e56a6", lw=0.55, rasterized=True)
+    axes[0].set_xlim(rec.time[0], rec.time[-1])
+    axes[0].axvspan(start, stop, color="#f2aa4c", alpha=0.3)
+    axes[0].set_title(f"{title} | full recording", loc="left", weight="bold")
+    plot_window(axes[1], rec, start, stop, color="#6e56a6")
+    axes[1].set_title(f"Detail | {start:g}–{stop:g} s", loc="left", weight="bold")
+    for ax in axes:
+        ax.set_xlabel("Time (s)")
+        style_axis(ax)
+    fig.tight_layout()
+    fig.savefig(f"{stem}.pdf", bbox_inches="tight")
+    plt.close(fig)
+
+
 def main() -> None:
-    a, b, c, d, e = (
+    a, b, c, d, e, f, g = (
         load_recording(stem)
-        for stem in ("splg0001", "splg0002", "splg0003", "splg0004", "splg0006")
+        for stem in (
+            "splg0001",
+            "splg0002",
+            "splg0003",
+            "splg0004",
+            "splg0006",
+            "splg0008",
+            "splg0009",
+        )
     )
     intervals = low_amplitude_intervals(c)
     overview(a, b, c, intervals)
     splg0003_detail(c, intervals)
     splg0004_plot(d)
     splg0006_plot(e)
+    detection_plot(f, "splg0008", "SPLG0008 | PC817C anode relative to terminal 4", 26.9, 28.0)
+    detection_plot(
+        g, "splg0009", "SPLG0009 | Voltage across PC817C collector and emitter", 28.9, 30.1
+    )
     for i, (start, end) in enumerate(intervals, 1):
         print(f"SPLG0003 POI {i}: {start:.3f}–{end:.3f} s (Δt = {end - start:.3f} s)")
     # print("Saved PNG and PDF figures to the current directory.")
