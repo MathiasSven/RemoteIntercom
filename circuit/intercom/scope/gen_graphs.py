@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Produce annotated oscilloscope plots for the three SPLG recordings.
+"""Produce annotated oscilloscope plots for SPLG recordings 1–4 and 6.
 
 Dependencies: numpy, pandas, matplotlib, scipy
 Usage: python gen_graphs.py  (run in the directory containing the CSV files)
@@ -187,11 +187,40 @@ def splg0003_detail(c: Recording, intervals: list[tuple[float, float]]) -> None:
     plt.close(fig)
 
 
+def splg0004_plot(rec: Recording) -> None:
+    fig, ax = plt.subplots(figsize=(13, 4))
+    ax.plot(rec.time, rec.voltage, color="#a34b38", lw=0.55, rasterized=True)
+    ax.set_xlim(rec.time[0], rec.time[-1])
+    ax.set_title("SPLG0004 | Zener–PC817C node relative to terminal 4", loc="left", weight="bold")
+    ax.set_xlabel("Time (s)")
+    style_axis(ax)
+    fig.tight_layout()
+    fig.savefig("splg0004.pdf", bbox_inches="tight")
+    plt.close(fig)
+
+
+def splg0006_plot(rec: Recording) -> None:
+    fig, ax = plt.subplots(figsize=(13, 4))
+    ax.plot(rec.time, rec.voltage, color="#6e56a6", lw=0.55, rasterized=True)
+    ax.set_xlim(rec.time[0], rec.time[-1])
+    ax.set_title("SPLG0006 | Open 1N4148 output relative to terminal 4", loc="left", weight="bold")
+    ax.set_xlabel("Time (s)")
+    style_axis(ax)
+    fig.tight_layout()
+    fig.savefig("splg0006.pdf", bbox_inches="tight")
+    plt.close(fig)
+
+
 def main() -> None:
-    a, b, c = (load_recording(stem) for stem in ("splg0001", "splg0002", "splg0003"))
+    a, b, c, d, e = (
+        load_recording(stem)
+        for stem in ("splg0001", "splg0002", "splg0003", "splg0004", "splg0006")
+    )
     intervals = low_amplitude_intervals(c)
     overview(a, b, c, intervals)
     splg0003_detail(c, intervals)
+    splg0004_plot(d)
+    splg0006_plot(e)
     for i, (start, end) in enumerate(intervals, 1):
         print(f"SPLG0003 POI {i}: {start:.3f}–{end:.3f} s (Δt = {end - start:.3f} s)")
     # print("Saved PNG and PDF figures to the current directory.")
