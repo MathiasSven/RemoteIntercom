@@ -55,7 +55,10 @@
           ];
 
           shellHook = ''
-            uv pip install --quiet -r pyproject.toml --extra stubs --target typings
+            if project_dir=$(git rev-parse --show-toplevel 2>/dev/null) &&
+              grep -Fxq 'name = "RemoteIntercom"' "$project_dir/pyproject.toml" 2>/dev/null; then
+              uv pip install --quiet -r "$project_dir/pyproject.toml" --extra stubs --target "$project_dir/typings"
+            fi
 
             echo "ESP8266 MicroPython development"
           '';
